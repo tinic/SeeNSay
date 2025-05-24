@@ -15,18 +15,39 @@ project(seensay)
 
 pico_sdk_init()
 
-add_subdirectory (pico-filesystem pfs)
-add_subdirectory(picomp3lib/src)
+# Create directory for generated sound headers
+set(GENERATED_SOUNDS_DIR "${CMAKE_BINARY_DIR}/generated_sounds")
+file(MAKE_DIRECTORY ${GENERATED_SOUNDS_DIR})
+
+# Custom command to convert sounds to headers
+add_custom_command(
+    OUTPUT ${GENERATED_SOUNDS_DIR}/sounds.h
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/convert_sounds.py ${CMAKE_SOURCE_DIR}/sounds ${GENERATED_SOUNDS_DIR}
+    DEPENDS ${CMAKE_SOURCE_DIR}/convert_sounds.py
+    COMMENT "Converting MP3 files to PCM headers"
+    VERBATIM
+)
+
+# Create a custom target for sound conversion
+add_custom_target(convert_sounds DEPENDS ${GENERATED_SOUNDS_DIR}/sounds.h)
 
 add_executable(${CMAKE_PROJECT_NAME}
     main.cpp
-    music_file_lfs.cpp
+    pwm_audio.cpp
+    ${GENERATED_SOUNDS_DIR}/sounds.h
 )
+
+# Add generated directory to include path
+target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${GENERATED_SOUNDS_DIR})
+
+# Make sure sounds are converted before building main executable
+add_dependencies(${CMAKE_PROJECT_NAME} convert_sounds)
 
 target_link_libraries(${CMAKE_PROJECT_NAME} 
     pico_stdlib
-    flash_filesystem
-    picomp3lib
+    hardware_pwm
+    hardware_timer
+    hardware_irq
 )
 
 # Enable USB output, disable UART output
