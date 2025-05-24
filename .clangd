@@ -6,3 +6,7 @@ CompileFlags:
   Remove:
     - -mthumb
     - -mcpu=*
+
+InlayHints:
+  Enabled: false
+  ParameterNames: false
