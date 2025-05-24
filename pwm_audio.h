@@ -16,10 +16,10 @@
 
 // Audio player state
 typedef struct {
-    const unsigned char* data;
-    size_t size;
-    size_t position;
-    bool playing;
+    const unsigned char* data = 0;
+    size_t size = 0;
+    size_t position = 0;
+    bool playing = 0;
 } audio_player_t;
 
 // Initialize PWM audio system

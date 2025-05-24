@@ -19,7 +19,7 @@ typedef struct {
 static button_sound_t button_sounds[NUM_BUTTONS] = {0};
 
 void gpio_callback(uint gpio, uint32_t events) {
-    if (events & GPIO_IRQ_EDGE_RISE && gpio >= FIRST_BUTTON_PIN && gpio <= LAST_BUTTON_PIN) {
+    if (events & GPIO_IRQ_EDGE_RISE && gpio <= LAST_BUTTON_PIN) {
         int button_index = gpio - FIRST_BUTTON_PIN;
         if (!pwm_audio_is_playing()) {
             if (button_sounds[button_index].data && button_sounds[button_index].size > 0) {
@@ -29,7 +29,7 @@ void gpio_callback(uint gpio, uint32_t events) {
     }
 }
 
-bool pwm_audio_timer_callback(struct repeating_timer* t) {
+bool pwm_audio_timer_callback(struct repeating_timer* /*t*/) {
     if (!player.playing || player.position >= player.size) {
         player.playing = false;
         return true;
