@@ -15,11 +15,22 @@ project(seensay)
 
 pico_sdk_init()
 
+add_subdirectory (pico-filesystem pfs)
+add_subdirectory(picomp3lib/src)
+
 add_executable(${CMAKE_PROJECT_NAME}
     main.cpp
 )
 
-target_link_libraries(${CMAKE_PROJECT_NAME} pico_stdlib)
+target_link_libraries(${CMAKE_PROJECT_NAME} 
+    pico_stdlib
+    flash_filesystem
+    picomp3lib
+)
+
+# Enable USB output, disable UART output
+pico_enable_stdio_usb(${CMAKE_PROJECT_NAME} 1)
+pico_enable_stdio_uart(${CMAKE_PROJECT_NAME} 0)
 
 pico_add_uf2_output(${CMAKE_PROJECT_NAME})
 pico_generate_pio_header(${CMAKE_PROJECT_NAME})

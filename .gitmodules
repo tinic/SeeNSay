@@ -1,3 +1,9 @@
 [submodule "pico-sdk"]
 	path = pico-sdk
 	url = git@github.com:raspberrypi/pico-sdk.git
+[submodule "pico-filesystem"]
+	path = pico-filesystem
+	url = https://github.com/Memotech-Bill/pico-filesystem.git
+[submodule "picomp3lib"]
+	path = picomp3lib
+	url = https://github.com/ikjordan/picomp3lib.git
