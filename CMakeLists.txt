@@ -20,6 +20,7 @@ add_subdirectory(picomp3lib/src)
 
 add_executable(${CMAKE_PROJECT_NAME}
     main.cpp
+    music_file_lfs.cpp
 )
 
 target_link_libraries(${CMAKE_PROJECT_NAME} 
