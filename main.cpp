@@ -2,6 +2,7 @@
 
 #include "pico/stdlib.h"
 #include "hardware/sync.h"
+#include "pico/sleep.h"
 #include "sounds.h"
 #include "pwm_audio.h"
 #include "tusb.h"  // TinyUSB device stack
@@ -40,8 +41,16 @@ int main() {
 #endif  // #if 0
 
     while (1) {
-        __wfi();
         button_check();
+        
+        // If no audio playing, use WFI for power saving
+        if (!pwm_audio_is_playing()) {
+            // Disable unnecessary peripherals when idle
+            // GPIO interrupts will wake us up
+            __wfi();
+        } else {
+            __wfi(); // Light sleep while playing
+        }
     }
 
     return 0;

@@ -102,6 +102,9 @@ void pwm_audio_play(const uint16_t* data, size_t size, bool loop) {
 
     printf("slice_num %d chan_num %d\n", slice_num, chan_num);
     
+    // Re-enable PWM before starting
+    pwm_set_enabled(slice_num, true);
+    
     dma_channel_configure(dma_chan, &dma_cfg,
                           write_addr,     // Write address
                           player.data,    // Read address (preprocessed PWM data)
@@ -117,6 +120,11 @@ void pwm_audio_stop(void) {
         player.playing = false;
         // --------------------------------
         dma_channel_abort(dma_chan);
+        
+        // Disable PWM to save power
+        uint slice_num = pwm_gpio_to_slice_num(AUDIO_PIN);
+        pwm_set_enabled(slice_num, false);
+        
         gpio_put(AUDIO_OFF_PIN, false);
     }
 }
