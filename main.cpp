@@ -48,13 +48,9 @@ int main() {
     while (1) {
         button_check();
         
-        // If no audio playing, enter deeper power saving
+        // If no audio playing, use WFI for power saving
         if (!pwm_audio_is_playing()) {
-            // Scale down clock even further when idle
-            set_sys_clock_khz(12000, true);
             __wfi();
-            // Restore clock when woken
-            set_sys_clock_khz(48000, true);
         } else {
             __wfi(); // Light sleep while playing
         }
