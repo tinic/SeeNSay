@@ -97,7 +97,6 @@ void PWMAudio::play(const uint16_t* data, size_t size) {
 
 void PWMAudio::stop() {
     if (audio_playing) {
-        // Update final position before stopping
         uint32_t remaining = dma_channel_hw_addr(dma_chan)->transfer_count;
         audio_position = audio_size - remaining;
         
@@ -120,7 +119,6 @@ size_t PWMAudio::get_position() const {
         return audio_position;
     }
     
-    // Get remaining transfers from DMA
     uint32_t remaining = dma_channel_hw_addr(dma_chan)->transfer_count;
     size_t current_pos = audio_size - remaining;
     

@@ -35,7 +35,9 @@ private:
 
     dma_channel_config dma_cfg{};
     int dma_chan = 0;
+
     std::array<button_sound, num_buttons> button_sounds{};
+
     PWMAudio() {
         init();
     }
