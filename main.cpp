@@ -2,13 +2,18 @@
 
 #include "pico/stdlib.h"
 #include "hardware/sync.h"
-#include "pico/sleep.h"
+#include "hardware/clocks.h"
+#include "hardware/pll.h"
+#include "hardware/xosc.h"
 #include "sounds.h"
 #include "pwm_audio.h"
-#include "tusb.h"  // TinyUSB device stack
 
 int main() {
-    stdio_init_all();
+    // Skip USB/stdio initialization for power saving
+    // stdio_init_all();
+    
+    // Reduce system clock for power saving (48MHz instead of 125MHz)
+    set_sys_clock_khz(48000, true);
 
     buttons_init();
 
@@ -43,11 +48,13 @@ int main() {
     while (1) {
         button_check();
         
-        // If no audio playing, use WFI for power saving
+        // If no audio playing, enter deeper power saving
         if (!pwm_audio_is_playing()) {
-            // Disable unnecessary peripherals when idle
-            // GPIO interrupts will wake us up
+            // Scale down clock even further when idle
+            set_sys_clock_khz(12000, true);
             __wfi();
+            // Restore clock when woken
+            set_sys_clock_khz(48000, true);
         } else {
             __wfi(); // Light sleep while playing
         }

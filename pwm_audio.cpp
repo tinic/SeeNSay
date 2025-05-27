@@ -9,6 +9,7 @@
 #include "hardware/irq.h"
 #include "hardware/pwm.h"
 #include "hardware/timer.h"
+#include "hardware/clocks.h"
 #include "pico/stdlib.h"
 
 static audio_player_t player{};
@@ -147,6 +148,16 @@ void buttons_init(void) {
         gpio_set_dir(pin, GPIO_IN);
         gpio_pull_up(pin);
         gpio_set_irq_enabled_with_callback(pin, GPIO_IRQ_EDGE_FALL, true, &gpio_callback);
+    }
+    
+    // Disable unused GPIO pins to save power
+    for (int pin = LAST_BUTTON_PIN + 1; pin < 29; pin++) {
+        if (pin != AUDIO_PIN && pin != AUDIO_OFF_PIN) {
+            gpio_init(pin);
+            gpio_set_dir(pin, GPIO_IN);
+            gpio_disable_pulls(pin);
+            gpio_set_input_enabled(pin, false);
+        }
     }
 }
 
