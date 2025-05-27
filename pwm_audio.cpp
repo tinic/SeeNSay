@@ -29,7 +29,6 @@ static void dma_irq_handler() {
         dma_channel_acknowledge_irq0(dma_chan);
         printf("dma_irq_handler!\n");
         if (player.playing) {
-            player.playing = false;
             if (player.loop) {
                 printf("loop!\n");
                 // Restart the DMA transfer for looping
@@ -68,8 +67,10 @@ void pwm_audio_init(void) {
     uint slice_num = pwm_gpio_to_slice_num(AUDIO_PIN);
     uint chan_num = pwm_gpio_to_channel(AUDIO_PIN);
     pwm_config config = pwm_get_default_config();
-    pwm_config_set_clkdiv(&config, 22.16f);
-    pwm_config_set_wrap(&config, 255);
+    // For 22kHz with 16-bit resolution: need faster PWM clock
+    // 125MHz / (2839 wrap * 22050Hz) = ~2.0 divider  
+    pwm_config_set_clkdiv(&config, 2.0f);
+    pwm_config_set_wrap(&config, 2838);
     pwm_init(slice_num, &config, true);
     pwm_set_chan_level(pwm_gpio_to_slice_num(AUDIO_PIN), chan_num, 0);
     pwm_set_enabled(pwm_gpio_to_slice_num(AUDIO_PIN), true);
@@ -121,10 +122,10 @@ void pwm_audio_play(const unsigned char* data, size_t size, bool loop) {
     printf("slice_num %d chan_num %d\n", slice_num, chan_num);
     
     dma_channel_configure(dma_chan, &dma_cfg,
-                          write_addr,       // Write address
-                          player.data,      // Read address
-                          player.size / 2,  // Number of samples
-                          true);            // Start now
+                          write_addr,     // Write address
+                          player.data,    // Read address (preprocessed PWM data)
+                          player.size/2,  // Number of 16-bit samples
+                          true);          // Start now
 
     dma_channel_set_irq0_enabled(dma_chan, true);
 }

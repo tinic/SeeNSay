@@ -30,9 +30,19 @@ def convert_mp3_to_header(mp3_file, output_dir):
             print(f"Error converting {mp3_file}: {result.stderr}")
             return False
         
-        # Read PCM data
+        # Read PCM data and convert to PWM values
         with open(temp_pcm_path, 'rb') as f:
             pcm_data = f.read()
+        
+        # Convert 16-bit signed PCM to PWM values (0-2838)
+        import struct
+        samples = struct.unpack('<' + 'h' * (len(pcm_data) // 2), pcm_data)
+        pwm_data = []
+        for sample in samples:
+            # Convert signed 16-bit (-32768 to +32767) to PWM range (0 to 2838)
+            unsigned_sample = sample + 32768  # Make unsigned (0 to 65535)
+            pwm_value = (unsigned_sample * 2838) // 65535  # Scale to PWM range
+            pwm_data.append(pwm_value)
         
         # Generate C header
         array_name = f"sound_{base_name}_data"
@@ -40,25 +50,25 @@ def convert_mp3_to_header(mp3_file, output_dir):
         
         with open(header_path, 'w') as f:
             f.write(f"// Auto-generated from {os.path.basename(mp3_file)}\n")
-            f.write(f"// 22kHz 8-bit unsigned PCM\n\n")
+            f.write(f"// 22kHz PWM values (0-2838)\n\n")
             f.write(f"#ifndef SOUND_{base_name.upper()}_H\n")
             f.write(f"#define SOUND_{base_name.upper()}_H\n\n")
             f.write(f"#include <stddef.h>\n\n")
-            f.write(f"extern const unsigned char {array_name}[];\n")
+            f.write(f"extern const unsigned short {array_name}[];\n")
             f.write(f"extern const size_t {size_name};\n\n")
-            f.write(f"const unsigned char {array_name}[] = {{\n")
+            f.write(f"const unsigned short {array_name}[] = {{\n")
             
-            # Write PCM data as hex bytes, 16 per line
-            for i in range(0, len(pcm_data), 16):
-                chunk = pcm_data[i:i+16]
-                hex_bytes = ', '.join(f'0x{b:02x}' for b in chunk)
-                f.write(f"    {hex_bytes}")
-                if i + 16 < len(pcm_data):
+            # Write PWM data as hex values, 8 per line
+            for i in range(0, len(pwm_data), 8):
+                chunk = pwm_data[i:i+8]
+                hex_values = ', '.join(f'0x{v:04x}' for v in chunk)
+                f.write(f"    {hex_values}")
+                if i + 8 < len(pwm_data):
                     f.write(',')
                 f.write('\n')
             
             f.write(f"}};\n\n")
-            f.write(f"const size_t {size_name} = {len(pcm_data)};\n\n")
+            f.write(f"const size_t {size_name} = {len(pwm_data)};\n\n")
             f.write(f"#endif // SOUND_{base_name.upper()}_H\n")
         
         print(f"Generated {header_name} ({len(pcm_data)} bytes)")

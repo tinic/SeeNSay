@@ -26,7 +26,7 @@ typedef struct {
 void pwm_audio_init(void);
 
 // Start playing a sound
-void pwm_audio_play(const unsigned char* data, size_t size);
+void pwm_audio_play(const unsigned char* data, size_t size, bool loop = false);
 
 // Stop audio playback
 void pwm_audio_stop(void);
