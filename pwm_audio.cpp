@@ -19,7 +19,7 @@ typedef struct {
     size_t index = 0;
     const unsigned char* data = 0;
     size_t size = 0;
-    bool pressed = 0;
+    bool pressed = false;
 } button_sound_t;
 
 static button_sound_t button_sounds[NUM_BUTTONS] = {0};
@@ -27,12 +27,25 @@ static button_sound_t button_sounds[NUM_BUTTONS] = {0};
 static void dma_irq_handler() {
     if (dma_channel_get_irq0_status(dma_chan)) {
         dma_channel_acknowledge_irq0(dma_chan);
-        printf("dma_irq_handler !\n");
+        printf("dma_irq_handler!\n");
         if (player.playing) {
             player.playing = false;
-            pwm_audio_stop();
-            // Optionally, you can add a callback here to notify
-            // your main loop that the sound has finished.
+            if (player.loop) {
+                printf("loop!\n");
+                // Restart the DMA transfer for looping
+                uint slice_num = pwm_gpio_to_slice_num(AUDIO_PIN);
+                uint chan_num = pwm_gpio_to_channel(AUDIO_PIN);
+                volatile void* write_addr = (chan_num == PWM_CHAN_A)
+                                                ? (void*)&pwm_hw->slice[slice_num].cc
+                                                : (void*)&((uint16_t*)&pwm_hw->slice[slice_num].cc)[1];
+
+                dma_channel_configure(dma_chan, &dma_cfg, write_addr, player.data, player.size / 2, true);
+                dma_channel_set_irq0_enabled(dma_chan, true);
+            } else {
+                printf("stop!\n");
+                player.playing = false;
+                pwm_audio_stop();
+            }
         }
     }
 }
@@ -55,8 +68,8 @@ void pwm_audio_init(void) {
     uint slice_num = pwm_gpio_to_slice_num(AUDIO_PIN);
     uint chan_num = pwm_gpio_to_channel(AUDIO_PIN);
     pwm_config config = pwm_get_default_config();
-    pwm_config_set_clkdiv(&config, 5.5f); 
-    pwm_config_set_wrap(&config, 65535); 
+    pwm_config_set_clkdiv(&config, 22.16f);
+    pwm_config_set_wrap(&config, 255);
     pwm_init(slice_num, &config, true);
     pwm_set_chan_level(pwm_gpio_to_slice_num(AUDIO_PIN), chan_num, 0);
     pwm_set_enabled(pwm_gpio_to_slice_num(AUDIO_PIN), true);
@@ -76,6 +89,7 @@ void pwm_audio_init(void) {
     player.size = 0;
     player.position = 0;
     player.playing = false;
+    player.loop = false;
 
     // --------------------------------
 
@@ -84,32 +98,33 @@ void pwm_audio_init(void) {
     irq_set_enabled(DMA_IRQ_0, true);
 }
 
-void pwm_audio_play(const unsigned char* data, size_t size) {
-    pwm_audio_stop();
+void pwm_audio_play(const unsigned char* data, size_t size, bool loop) {
+    if (player.playing) {
+        return;
+    }
 
     printf("pwm_audio_play\n");
     player.data = data;
     player.size = size;
     player.position = 0;
     player.playing = true;
+    player.loop = loop;
 
     // --------------------------------
 
     uint slice_num = pwm_gpio_to_slice_num(AUDIO_PIN);
 
     uint chan_num = pwm_gpio_to_channel(AUDIO_PIN);
-    volatile void* write_addr = (chan_num == 0)
-        ? (void*)&pwm_hw->slice[slice_num].cc
-        : (void*)((uint32_t*)&pwm_hw->slice[slice_num].cc + 1);
+    volatile void* write_addr = (chan_num == PWM_CHAN_A) ? (void*)&pwm_hw->slice[slice_num].cc
+                                                         : (void*)&((uint16_t*)&pwm_hw->slice[slice_num].cc)[1];
 
     printf("slice_num %d chan_num %d\n", slice_num, chan_num);
-    sleep_ms(10);
-
+    
     dma_channel_configure(dma_chan, &dma_cfg,
-                          write_addr,    // Write address
-                          player.data,  // Read address
-                          player.size/2,  // Number of samples
-                          true);        // Start now
+                          write_addr,       // Write address
+                          player.data,      // Read address
+                          player.size / 2,  // Number of samples
+                          true);            // Start now
 
     dma_channel_set_irq0_enabled(dma_chan, true);
 }
@@ -150,11 +165,11 @@ void buttons_set_sound_data(int button_index, const unsigned char* data, size_t 
 }
 
 void button_check() {
-    for (auto &b: button_sounds) {
+    for (auto& b : button_sounds) {
         if (b.pressed) {
             b.pressed = false;
             printf("Playind sound %d!\n", b.index);
-            pwm_audio_play(b.data, b.size);
+            pwm_audio_play(b.data, b.size, true);
         }
     }
 }

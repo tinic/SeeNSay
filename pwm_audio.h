@@ -18,7 +18,8 @@ typedef struct {
     const unsigned char* data = 0;
     size_t size = 0;
     size_t position = 0;
-    bool playing = 0;
+    bool playing = false;
+    bool loop = false;
 } audio_player_t;
 
 // Initialize PWM audio system
