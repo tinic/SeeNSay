@@ -2,46 +2,65 @@
 #define PWM_AUDIO_H
 
 #include <stddef.h>
-#include <stdbool.h>
 #include <stdint.h>
+#include <array>
+#include "hardware/dma.h"
 
-// Audio configuration
-#define AUDIO_PIN 15         // GPIO pin for PWM audio output
-#define AUDIO_OFF_PIN 16     // GPIO pin for controlling on-off state of amplifier
-#define SAMPLE_RATE 22050    // 22kHz sample rate to match our PCM data
+class PWMAudio {
+private:
+    static constexpr size_t num_buttons = 12;
+    static constexpr uint first_button_pin = 0;
+    static constexpr uint last_button_pin = 11;
 
-// Button configuration
-#define NUM_BUTTONS 12       // Number of button/sound pairs
-#define FIRST_BUTTON_PIN 0   // First button GPIO pin
-#define LAST_BUTTON_PIN 11   // Last button GPIO pin
+    static constexpr uint audio_pin = 15;
+    static constexpr uint audio_off_pin = 16;
 
-// Audio player state
-typedef struct {
-    const uint16_t* data = 0;
-    size_t size = 0;
-    size_t position = 0;
-    bool playing = false;
-    bool loop = false;
-} audio_player_t;
+    static constexpr uint sample_rate = 22050;
+    static constexpr uint pwm_resolution_bits = 10;
+    static constexpr uint pwm_wrap = (1 << pwm_resolution_bits) + 64;
+    
+    uint system_clock_hz = 48000000;
+    float pwm_clk_div = 2.0f;
 
-// Initialize PWM audio system
-void pwm_audio_init(void);
+    struct button_sound {
+        size_t index = 0;
+        const uint16_t* data = nullptr;
+        size_t size = 0;
+        bool pressed = false;
+    };
 
-// Start playing a sound
-void pwm_audio_play(const uint16_t* data, size_t size, bool loop = false);
+    size_t audio_size = 0;
+    size_t audio_position = 0;
+    bool audio_playing = false;
 
-// Stop audio playback
-void pwm_audio_stop(void);
+    dma_channel_config dma_cfg{};
+    int dma_chan = 0;
+    std::array<button_sound, num_buttons> button_sounds{};
+    PWMAudio() {
+        init();
+    }
+    ~PWMAudio() = default;
 
-// Check if audio is currently playing
-bool pwm_audio_is_playing(void);
+    PWMAudio(const PWMAudio&) = delete;
+    PWMAudio& operator=(const PWMAudio&) = delete;
 
-// Get current playback position (in samples)
-size_t pwm_audio_get_position(void);
+    void dma_irq_handler_impl();
+    static void dma_irq_handler();
+    static void gpio_callback(uint gpio, uint32_t events);
 
-// Button handling functions
-void buttons_init(void);
-void buttons_set_sound_data(int button_index, const uint16_t* data, size_t size);
-void button_check(void);
+    void calculate_pwm_divider();
+    void buttons_init();
+    void play(const uint16_t* data, size_t size);
+    void stop();
+    bool is_playing() const;
+    size_t get_position() const;
+
+public:
+    static PWMAudio& instance();
+
+    void init();
+    void set_button_sound(size_t button_index, const uint16_t* data, size_t size);
+    void update();
+};
 
 #endif // PWM_AUDIO_H

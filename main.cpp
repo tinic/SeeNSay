@@ -13,22 +13,20 @@ int main() {
 
     stdio_init_all();
     
-    buttons_init();
+    PWMAudio& audio = PWMAudio::instance();
 
-    buttons_set_sound_data(0, sound_01_data, sound_01_size);
-    buttons_set_sound_data(1, sound_02_data, sound_02_size);
-    buttons_set_sound_data(2, sound_03_data, sound_03_size);
-    buttons_set_sound_data(3, sound_04_data, sound_04_size);
-    buttons_set_sound_data(4, sound_05_data, sound_05_size);
-    buttons_set_sound_data(5, sound_06_data, sound_06_size);
-    buttons_set_sound_data(6, sound_07_data, sound_07_size);
-    buttons_set_sound_data(7, sound_08_data, sound_08_size);
-    buttons_set_sound_data(8, sound_09_data, sound_09_size);
-    buttons_set_sound_data(9, sound_10_data, sound_10_size);
-    buttons_set_sound_data(10, sound_11_data, sound_11_size);
-    buttons_set_sound_data(11, sound_12_data, sound_12_size);
-
-    pwm_audio_init();
+    audio.set_button_sound(0, sound_01_data, sound_01_size);
+    audio.set_button_sound(1, sound_02_data, sound_02_size);
+    audio.set_button_sound(2, sound_03_data, sound_03_size);
+    audio.set_button_sound(3, sound_04_data, sound_04_size);
+    audio.set_button_sound(4, sound_05_data, sound_05_size);
+    audio.set_button_sound(5, sound_06_data, sound_06_size);
+    audio.set_button_sound(6, sound_07_data, sound_07_size);
+    audio.set_button_sound(7, sound_08_data, sound_08_size);
+    audio.set_button_sound(8, sound_09_data, sound_09_size);
+    audio.set_button_sound(9, sound_10_data, sound_10_size);
+    audio.set_button_sound(10, sound_11_data, sound_11_size);
+    audio.set_button_sound(11, sound_12_data, sound_12_size);
 
 #if 0
     const uint LED_PIN = 25;
@@ -44,7 +42,7 @@ int main() {
 #endif  // #if 0
 
     while (1) {
-        button_check();
+        audio.update();
         __wfi();
     }
 
