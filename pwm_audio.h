@@ -7,7 +7,6 @@
 // Audio configuration
 #define AUDIO_PIN 15         // GPIO pin for PWM audio output (changed from 0 to avoid button conflict)
 #define SAMPLE_RATE 22050    // 22kHz sample rate to match our PCM data
-#define PWM_WRAP 255         // 8-bit PWM resolution
 
 // Button configuration
 #define NUM_BUTTONS 12       // Number of button/sound pairs
@@ -40,5 +39,6 @@ size_t pwm_audio_get_position(void);
 // Button handling functions
 void buttons_init(void);
 void buttons_set_sound_data(int button_index, const unsigned char* data, size_t size);
+void button_check(void);
 
 #endif // PWM_AUDIO_H

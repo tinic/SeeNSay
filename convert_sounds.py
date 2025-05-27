@@ -20,7 +20,7 @@ def convert_mp3_to_header(mp3_file, output_dir):
             'ffmpeg', '-i', mp3_file,
             '-ar', '22050',      # 22kHz sample rate
             '-ac', '1',          # mono
-            '-f', 'u8',          # 8-bit unsigned PCM
+            '-f', 's16le',       # 16-bit unsigned PCM
             '-y',                # overwrite output
             temp_pcm_path
         ]

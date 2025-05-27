@@ -4,12 +4,11 @@
 #include "hardware/sync.h"
 #include "sounds.h"
 #include "pwm_audio.h"
+#include "tusb.h"  // TinyUSB device stack
 
 int main() {
     stdio_init_all();
-    
-    pwm_audio_init();
-    
+
     buttons_init();
 
     buttons_set_sound_data(0, sound_01_data, sound_01_size);
@@ -24,9 +23,25 @@ int main() {
     buttons_set_sound_data(9, sound_10_data, sound_10_size);
     buttons_set_sound_data(10, sound_11_data, sound_11_size);
     buttons_set_sound_data(11, sound_12_data, sound_12_size);
-    
+
+    pwm_audio_init();
+
+#if 0
+    const uint LED_PIN = 25;
+    gpio_init(LED_PIN);
+    gpio_set_dir(LED_PIN, GPIO_OUT);
+    while (1) {
+        static size_t counter = 
+        gpio_put(LED_PIN, 0);
+        sleep_ms(250);
+        gpio_put(LED_PIN, 1);
+        sleep_ms(1000);
+    }
+#endif  // #if 0
+
     while (1) {
         __wfi();
+        button_check();
     }
 
     return 0;
