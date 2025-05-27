@@ -27,32 +27,13 @@ static button_sound_t button_sounds[NUM_BUTTONS] = {0};
 static void dma_irq_handler() {
     if (dma_channel_get_irq0_status(dma_chan)) {
         dma_channel_acknowledge_irq0(dma_chan);
-        printf("dma_irq_handler!\n");
-        if (player.playing) {
-            if (player.loop) {
-                printf("loop!\n");
-                // Restart the DMA transfer for looping
-                uint slice_num = pwm_gpio_to_slice_num(AUDIO_PIN);
-                uint chan_num = pwm_gpio_to_channel(AUDIO_PIN);
-                volatile void* write_addr = (chan_num == PWM_CHAN_A)
-                                                ? (void*)&pwm_hw->slice[slice_num].cc
-                                                : (void*)&((uint16_t*)&pwm_hw->slice[slice_num].cc)[1];
-
-                dma_channel_configure(dma_chan, &dma_cfg, write_addr, player.data, player.size, true);
-                dma_channel_set_irq0_enabled(dma_chan, true);
-            } else {
-                printf("stop!\n");
-                player.playing = false;
-                pwm_audio_stop();
-            }
-        }
+        pwm_audio_stop();
     }
 }
 
 void gpio_callback(uint gpio, uint32_t events) {
     if (events & GPIO_IRQ_EDGE_FALL && gpio <= LAST_BUTTON_PIN) {
         int button_index = gpio - FIRST_BUTTON_PIN;
-        printf("Button %d pressed!\n", button_index);
         if (!pwm_audio_is_playing()) {
             if (button_sounds[button_index].data && button_sounds[button_index].size > 0) {
                 button_sounds[button_index].pressed = true;
@@ -128,15 +109,15 @@ void pwm_audio_play(const uint16_t* data, size_t size, bool loop) {
                           true);          // Start now
 
     dma_channel_set_irq0_enabled(dma_chan, true);
+    gpio_put(AUDIO_OFF_PIN, true);
 }
 
 void pwm_audio_stop(void) {
-    printf("pwm_audio_stop\n");
     if (player.playing) {
         player.playing = false;
         // --------------------------------
-        printf("dma_channel_abort\n");
         dma_channel_abort(dma_chan);
+        gpio_put(AUDIO_OFF_PIN, false);
     }
 }
 
@@ -149,6 +130,10 @@ size_t pwm_audio_get_position(void) {
 }
 
 void buttons_init(void) {
+    gpio_init(AUDIO_OFF_PIN);
+    gpio_set_dir(AUDIO_OFF_PIN, GPIO_OUT);
+    gpio_put(AUDIO_OFF_PIN, false);
+
     for (int pin = FIRST_BUTTON_PIN; pin <= LAST_BUTTON_PIN; pin++) {
         gpio_init(pin);
         gpio_set_dir(pin, GPIO_IN);
@@ -170,7 +155,7 @@ void button_check() {
         if (b.pressed) {
             b.pressed = false;
             printf("Playind sound %d!\n", b.index);
-            pwm_audio_play(b.data, b.size, true);
+            pwm_audio_play(b.data, b.size);
         }
     }
 }

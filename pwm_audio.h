@@ -3,9 +3,11 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 // Audio configuration
-#define AUDIO_PIN 15         // GPIO pin for PWM audio output (changed from 0 to avoid button conflict)
+#define AUDIO_PIN 15         // GPIO pin for PWM audio output
+#define AUDIO_OFF_PIN 16     // GPIO pin for controlling on-off state of amplifier
 #define SAMPLE_RATE 22050    // 22kHz sample rate to match our PCM data
 
 // Button configuration
