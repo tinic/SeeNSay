@@ -10,11 +10,9 @@
 
 int main() {
     set_sys_clock_48mhz();
-
     stdio_init_all();
     
     PWMAudio& audio = PWMAudio::instance();
-
     audio.set_button_sound(0, sound_01_data, sound_01_size);
     audio.set_button_sound(1, sound_02_data, sound_02_size);
     audio.set_button_sound(2, sound_03_data, sound_03_size);
@@ -27,19 +25,6 @@ int main() {
     audio.set_button_sound(9, sound_10_data, sound_10_size);
     audio.set_button_sound(10, sound_11_data, sound_11_size);
     audio.set_button_sound(11, sound_12_data, sound_12_size);
-
-#if 0
-    const uint LED_PIN = 25;
-    gpio_init(LED_PIN);
-    gpio_set_dir(LED_PIN, GPIO_OUT);
-    while (1) {
-        static size_t counter = 
-        gpio_put(LED_PIN, 0);
-        sleep_ms(250);
-        gpio_put(LED_PIN, 1);
-        sleep_ms(1000);
-    }
-#endif  // #if 0
 
     while (1) {
         audio.update();
