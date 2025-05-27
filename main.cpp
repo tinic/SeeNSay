@@ -9,12 +9,10 @@
 #include "pwm_audio.h"
 
 int main() {
-    // Skip USB/stdio initialization for power saving
-    // stdio_init_all();
-    
-    // Reduce system clock for power saving (48MHz instead of 125MHz)
-    set_sys_clock_khz(48000, true);
+    set_sys_clock_48mhz();
 
+    stdio_init_all();
+    
     buttons_init();
 
     buttons_set_sound_data(0, sound_01_data, sound_01_size);
@@ -47,17 +45,7 @@ int main() {
 
     while (1) {
         button_check();
-        
-        // If no audio playing, enter deeper power saving
-        if (!pwm_audio_is_playing()) {
-            // Scale down clock even further when idle
-            set_sys_clock_khz(12000, true);
-            __wfi();
-            // Restore clock when woken
-            set_sys_clock_khz(48000, true);
-        } else {
-            __wfi(); // Light sleep while playing
-        }
+        __wfi();
     }
 
     return 0;
