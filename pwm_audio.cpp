@@ -17,7 +17,7 @@ static int dma_chan = 0;
 
 typedef struct {
     size_t index = 0;
-    const unsigned char* data = 0;
+    const uint16_t* data = 0;
     size_t size = 0;
     bool pressed = false;
 } button_sound_t;
@@ -38,7 +38,7 @@ static void dma_irq_handler() {
                                                 ? (void*)&pwm_hw->slice[slice_num].cc
                                                 : (void*)&((uint16_t*)&pwm_hw->slice[slice_num].cc)[1];
 
-                dma_channel_configure(dma_chan, &dma_cfg, write_addr, player.data, player.size / 2, true);
+                dma_channel_configure(dma_chan, &dma_cfg, write_addr, player.data, player.size, true);
                 dma_channel_set_irq0_enabled(dma_chan, true);
             } else {
                 printf("stop!\n");
@@ -99,7 +99,7 @@ void pwm_audio_init(void) {
     irq_set_enabled(DMA_IRQ_0, true);
 }
 
-void pwm_audio_play(const unsigned char* data, size_t size, bool loop) {
+void pwm_audio_play(const uint16_t* data, size_t size, bool loop) {
     if (player.playing) {
         return;
     }
@@ -124,7 +124,7 @@ void pwm_audio_play(const unsigned char* data, size_t size, bool loop) {
     dma_channel_configure(dma_chan, &dma_cfg,
                           write_addr,     // Write address
                           player.data,    // Read address (preprocessed PWM data)
-                          player.size/2,  // Number of 16-bit samples
+                          player.size,    // Number of 16-bit samples
                           true);          // Start now
 
     dma_channel_set_irq0_enabled(dma_chan, true);
@@ -157,7 +157,7 @@ void buttons_init(void) {
     }
 }
 
-void buttons_set_sound_data(int button_index, const unsigned char* data, size_t size) {
+void buttons_set_sound_data(int button_index, const uint16_t* data, size_t size) {
     if (button_index >= 0 && button_index < NUM_BUTTONS) {
         button_sounds[button_index].data = data;
         button_sounds[button_index].size = size;

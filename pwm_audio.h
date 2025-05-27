@@ -15,7 +15,7 @@
 
 // Audio player state
 typedef struct {
-    const unsigned char* data = 0;
+    const uint16_t* data = 0;
     size_t size = 0;
     size_t position = 0;
     bool playing = false;
@@ -26,7 +26,7 @@ typedef struct {
 void pwm_audio_init(void);
 
 // Start playing a sound
-void pwm_audio_play(const unsigned char* data, size_t size, bool loop = false);
+void pwm_audio_play(const uint16_t* data, size_t size, bool loop = false);
 
 // Stop audio playback
 void pwm_audio_stop(void);
@@ -39,7 +39,7 @@ size_t pwm_audio_get_position(void);
 
 // Button handling functions
 void buttons_init(void);
-void buttons_set_sound_data(int button_index, const unsigned char* data, size_t size);
+void buttons_set_sound_data(int button_index, const uint16_t* data, size_t size);
 void button_check(void);
 
 #endif // PWM_AUDIO_H
