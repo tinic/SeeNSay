@@ -19,9 +19,6 @@ private:
     static constexpr uint pwm_resolution_bits = 10;
     static constexpr uint pwm_wrap = (1 << pwm_resolution_bits) + 64;
     
-    uint system_clock_hz = 48000000;
-    float pwm_clk_div = 2.0f;
-
     struct button_sound {
         size_t index = 0;
         const uint16_t* data = nullptr;
@@ -30,7 +27,7 @@ private:
     };
 
     size_t audio_size = 0;
-    size_t audio_position = 0;
+    intptr_t audio_position = 0;
     bool audio_playing = false;
 
     dma_channel_config dma_cfg{};
@@ -50,8 +47,10 @@ private:
     static void dma_irq_handler();
     static void gpio_callback(uint gpio, uint32_t events);
 
-    void calculate_pwm_divider();
-    void buttons_init();
+    void init();
+    void btn_gpio_init();
+    void pwm_dma_init();
+
     void play(const uint16_t* data, size_t size);
     void stop();
     bool is_playing() const;
@@ -59,8 +58,6 @@ private:
 
 public:
     static PWMAudio& instance();
-
-    void init();
     void set_button_sound(size_t button_index, const uint16_t* data, size_t size);
     void update();
 };

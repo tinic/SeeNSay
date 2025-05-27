@@ -8,7 +8,6 @@
 #include "hardware/irq.h"
 #include "hardware/pwm.h"
 #include "hardware/timer.h"
-#include "pico/stdlib.h"
 
 PWMAudio& PWMAudio::instance() {
     static PWMAudio instance;
@@ -38,20 +37,41 @@ void PWMAudio::gpio_callback(uint gpio, uint32_t events) {
     }
 }
 
-void PWMAudio::calculate_pwm_divider() {
-    system_clock_hz = clock_get_hz(clk_sys);
-    pwm_clk_div = static_cast<float>(system_clock_hz) / (sample_rate * (pwm_wrap + 1));
+void PWMAudio::init() {
+    btn_gpio_init();
+    pwm_dma_init();
 }
 
-void PWMAudio::init() {
-    calculate_pwm_divider();
-    buttons_init();
+void PWMAudio::btn_gpio_init() {
+    gpio_init(audio_off_pin);
+    gpio_set_dir(audio_off_pin, GPIO_OUT);
+    gpio_put(audio_off_pin, false);
+
+    for (uint pin = first_button_pin; pin <= last_button_pin; pin++) {
+        gpio_init(pin);
+        gpio_set_dir(pin, GPIO_IN);
+        gpio_pull_up(pin);
+        gpio_set_irq_enabled_with_callback(pin, GPIO_IRQ_EDGE_FALL, true, &gpio_callback);
+    }
+
+    for (int pin = last_button_pin + 1; pin < 29; pin++) {
+        if (pin != audio_pin && pin != audio_off_pin) {
+            gpio_init(pin);
+            gpio_set_dir(pin, GPIO_IN);
+            gpio_disable_pulls(pin);
+            gpio_set_input_enabled(pin, false);
+        }
+    }
+}
+
+void PWMAudio::pwm_dma_init() {
     gpio_set_function(audio_pin, GPIO_FUNC_PWM);
 
     uint slice_num = pwm_gpio_to_slice_num(audio_pin);
     uint chan_num = pwm_gpio_to_channel(audio_pin);
     pwm_config config = pwm_get_default_config();
-    pwm_config_set_clkdiv(&config, pwm_clk_div);
+    pwm_config_set_clkdiv(&config, static_cast<float>(clock_get_hz(clk_sys)) /
+                                       static_cast<float>(sample_rate * (pwm_wrap + 1)));
     pwm_config_set_wrap(&config, pwm_wrap);
     pwm_init(slice_num, &config, true);
     pwm_set_chan_level(pwm_gpio_to_slice_num(audio_pin), chan_num, 0);
@@ -80,18 +100,13 @@ void PWMAudio::play(const uint16_t* data, size_t size) {
 
     uint slice_num = pwm_gpio_to_slice_num(audio_pin);
     uint chan_num = pwm_gpio_to_channel(audio_pin);
-    volatile void* write_addr = (chan_num == PWM_CHAN_A) ? (void*)&pwm_hw->slice[slice_num].cc
-                                                         : (void*)&((uint16_t*)&pwm_hw->slice[slice_num].cc)[1];
-
+    volatile void* write_addr =
+        (chan_num == PWM_CHAN_A) ? (void*)&pwm_hw->slice[slice_num].cc
+                                 : (void*)&((uint16_t*)&pwm_hw->slice[slice_num].cc)[1];
     pwm_set_enabled(slice_num, true);
-
-    dma_channel_configure(dma_chan, &dma_cfg,
-                          write_addr,
-                          data,
-                          audio_size,
-                          true);
-
+    dma_channel_configure(dma_chan, &dma_cfg, write_addr, data, audio_size, true);
     dma_channel_set_irq0_enabled(dma_chan, true);
+
     gpio_put(audio_off_pin, true);
 }
 
@@ -99,12 +114,10 @@ void PWMAudio::stop() {
     if (audio_playing) {
         uint32_t remaining = dma_channel_hw_addr(dma_chan)->transfer_count;
         audio_position = audio_size - remaining;
-        
         audio_playing = false;
-        dma_channel_abort(dma_chan);
 
-        uint slice_num = pwm_gpio_to_slice_num(audio_pin);
-        pwm_set_enabled(slice_num, false);
+        dma_channel_abort(dma_chan);
+        pwm_set_enabled(pwm_gpio_to_slice_num(audio_pin), false);
 
         gpio_put(audio_off_pin, false);
     }
@@ -118,33 +131,11 @@ size_t PWMAudio::get_position() const {
     if (!audio_playing) {
         return audio_position;
     }
-    
+
     uint32_t remaining = dma_channel_hw_addr(dma_chan)->transfer_count;
     size_t current_pos = audio_size - remaining;
-    
+
     return current_pos;
-}
-
-void PWMAudio::buttons_init() {
-    gpio_init(audio_off_pin);
-    gpio_set_dir(audio_off_pin, GPIO_OUT);
-    gpio_put(audio_off_pin, false);
-
-    for (uint pin = first_button_pin; pin <= last_button_pin; pin++) {
-        gpio_init(pin);
-        gpio_set_dir(pin, GPIO_IN);
-        gpio_pull_up(pin);
-        gpio_set_irq_enabled_with_callback(pin, GPIO_IRQ_EDGE_FALL, true, &gpio_callback);
-    }
-
-    for (int pin = last_button_pin + 1; pin < 29; pin++) {
-        if (pin != audio_pin && pin != audio_off_pin) {
-            gpio_init(pin);
-            gpio_set_dir(pin, GPIO_IN);
-            gpio_disable_pulls(pin);
-            gpio_set_input_enabled(pin, false);
-        }
-    }
 }
 
 void PWMAudio::set_button_sound(size_t bi, const uint16_t* data, size_t size) {
