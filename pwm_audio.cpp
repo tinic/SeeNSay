@@ -49,10 +49,10 @@ void pwm_audio_init(void) {
     uint slice_num = pwm_gpio_to_slice_num(AUDIO_PIN);
     uint chan_num = pwm_gpio_to_channel(AUDIO_PIN);
     pwm_config config = pwm_get_default_config();
-    // For 22kHz with 16-bit resolution: need faster PWM clock
-    // 125MHz / (2839 wrap * 22050Hz) = ~2.0 divider  
+    // For 22kHz with 48MHz system clock: 48MHz / (22050Hz * (wrap + 1)) = divider
+    // Using wrap = 1088: 48MHz / (22050 * 1089) = ~2.0 divider
     pwm_config_set_clkdiv(&config, 2.0f);
-    pwm_config_set_wrap(&config, 2838);
+    pwm_config_set_wrap(&config, 1088);
     pwm_init(slice_num, &config, true);
     pwm_set_chan_level(pwm_gpio_to_slice_num(AUDIO_PIN), chan_num, 0);
     pwm_set_enabled(pwm_gpio_to_slice_num(AUDIO_PIN), true);

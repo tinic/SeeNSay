@@ -40,9 +40,9 @@ def convert_mp3_to_header(mp3_file, output_dir):
         samples = struct.unpack('<' + 'h' * (len(pcm_data) // 2), pcm_data)
         pwm_data = []
         for sample in samples:
-            # Convert signed 16-bit (-32768 to +32767) to PWM range (0 to 2838)
+            # Convert signed 16-bit (-32768 to +32767) to PWM range (0 to 1088)
             unsigned_sample = sample + 32768  # Make unsigned (0 to 65535)
-            pwm_value = (unsigned_sample * 2838) // 65535  # Scale to PWM range
+            pwm_value = (unsigned_sample * 1088) // 65535  # Scale to PWM range
             pwm_data.append(pwm_value)
         
         # Generate C header
@@ -51,7 +51,7 @@ def convert_mp3_to_header(mp3_file, output_dir):
         
         with open(header_path, 'w') as f:
             f.write(f"// Auto-generated from {os.path.basename(mp3_file)}\n")
-            f.write(f"// 22kHz PWM values (0-2838)\n\n")
+            f.write(f"// 22kHz PWM values (0-1088)\n\n")
             f.write(f"#ifndef SOUND_{base_name.upper()}_H\n")
             f.write(f"#define SOUND_{base_name.upper()}_H\n\n")
             f.write(f"#include <stddef.h>\n\n")
