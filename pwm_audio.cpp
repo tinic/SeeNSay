@@ -15,17 +15,14 @@ PWMAudio& PWMAudio::instance() {
 }
 
 void PWMAudio::dma_irq_handler() {
-    PWMAudio::instance().dma_irq_handler_impl();
-}
-
-void PWMAudio::dma_irq_handler_impl() {
-    if (dma_channel_get_irq0_status(dma_chan)) {
-        dma_channel_acknowledge_irq0(dma_chan);
-        stop();
+    PWMAudio& audio = PWMAudio::instance();
+    if (dma_channel_get_irq0_status(audio.dma_chan)) {
+        dma_channel_acknowledge_irq0(audio.dma_chan);
+        audio.stop();
     }
 }
 
-void PWMAudio::gpio_callback(uint gpio, uint32_t events) {
+void PWMAudio::gpio_irq_handler(uint gpio, uint32_t events) {
     if (events & GPIO_IRQ_EDGE_FALL && gpio <= last_button_pin) {
         size_t bi = gpio - first_button_pin;
         PWMAudio& audio = PWMAudio::instance();
@@ -51,10 +48,10 @@ void PWMAudio::btn_gpio_init() {
         gpio_init(pin);
         gpio_set_dir(pin, GPIO_IN);
         gpio_pull_up(pin);
-        gpio_set_irq_enabled_with_callback(pin, GPIO_IRQ_EDGE_FALL, true, &gpio_callback);
+        gpio_set_irq_enabled_with_callback(pin, GPIO_IRQ_EDGE_FALL, true, &gpio_irq_handler);
     }
 
-    for (int pin = last_button_pin + 1; pin < 29; pin++) {
+    for (uint pin = last_button_pin + 1; pin < 29; pin++) {
         if (pin != audio_pin && pin != audio_off_pin) {
             gpio_init(pin);
             gpio_set_dir(pin, GPIO_IN);
@@ -113,7 +110,11 @@ void PWMAudio::play(const uint16_t* data, size_t size) {
 void PWMAudio::stop() {
     if (audio_playing) {
         uint32_t remaining = dma_channel_hw_addr(dma_chan)->transfer_count;
-        audio_position = audio_size - remaining;
+        if (remaining > audio_size) {
+            audio_position = 0;
+        } else {
+            audio_position = static_cast<intptr_t>(audio_size - remaining);
+        }
         audio_playing = false;
 
         dma_channel_abort(dma_chan);
@@ -129,20 +130,22 @@ bool PWMAudio::is_playing() const {
 
 size_t PWMAudio::get_position() const {
     if (!audio_playing) {
-        return audio_position;
+        return audio_position < 0 ? 0 : static_cast<size_t>(audio_position);
     }
 
     uint32_t remaining = dma_channel_hw_addr(dma_chan)->transfer_count;
-    size_t current_pos = audio_size - remaining;
-
-    return current_pos;
+    if (remaining > audio_size) {
+        return 0;
+    }
+    
+    return audio_size - remaining;
 }
 
-void PWMAudio::set_button_sound(size_t bi, const uint16_t* data, size_t size) {
+void PWMAudio::set_button_sound(uint bi, const uint16_t* data, size_t size) {
     if (bi < num_buttons) {
-        button_sounds[bi].data = data;
-        button_sounds[bi].size = size;
-        button_sounds[bi].index = bi;
+        button_sounds.at(bi).data = data;
+        button_sounds.at(bi).size = size;
+        button_sounds.at(bi).index = bi;
     }
 }
 

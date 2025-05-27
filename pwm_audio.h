@@ -8,7 +8,7 @@
 
 class PWMAudio {
 private:
-    static constexpr size_t num_buttons = 12;
+    static constexpr uint num_buttons = 12;
     static constexpr uint first_button_pin = 0;
     static constexpr uint last_button_pin = 11;
 
@@ -43,9 +43,8 @@ private:
     PWMAudio(const PWMAudio&) = delete;
     PWMAudio& operator=(const PWMAudio&) = delete;
 
-    void dma_irq_handler_impl();
     static void dma_irq_handler();
-    static void gpio_callback(uint gpio, uint32_t events);
+    static void gpio_irq_handler(uint gpio, uint32_t events);
 
     void init();
     void btn_gpio_init();
@@ -58,7 +57,7 @@ private:
 
 public:
     static PWMAudio& instance();
-    void set_button_sound(size_t button_index, const uint16_t* data, size_t size);
+    void set_button_sound(uint button_index, const uint16_t* data, size_t size);
     void update();
 };
 
