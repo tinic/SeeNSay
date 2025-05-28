@@ -19,29 +19,21 @@ private:
     static constexpr uint pwm_resolution_bits = 10;
     static constexpr uint pwm_wrap = (1 << pwm_resolution_bits) + 64;
     
+    bool initialized = false;
+    size_t audio_size = 0;
+    intptr_t audio_position = 0;
+    bool audio_playing = false;
+    
+    dma_channel_config dma_cfg{};
+    int dma_chan = 0;
+
     struct button_sound {
         size_t index = 0;
         const uint16_t* data = nullptr;
         size_t size = 0;
         bool pressed = false;
     };
-
-    size_t audio_size = 0;
-    intptr_t audio_position = 0;
-    bool audio_playing = false;
-
-    dma_channel_config dma_cfg{};
-    int dma_chan = 0;
-
-    std::array<button_sound, num_buttons> button_sounds{};
-
-    SeeNSay() {
-        init();
-    }
-    ~SeeNSay() = default;
-
-    SeeNSay(const SeeNSay&) = delete;
-    SeeNSay& operator=(const SeeNSay&) = delete;
+    std::array<struct button_sound, num_buttons> button_sounds{};
 
     static void dma_irq_handler();
     static void gpio_irq_handler(uint gpio, uint32_t events);

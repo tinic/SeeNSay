@@ -10,8 +10,12 @@
 #include "hardware/timer.h"
 
 SeeNSay& SeeNSay::instance() {
-    static SeeNSay instance;
-    return instance;
+    static SeeNSay seensay;
+    if (!seensay.initialized) {
+        seensay.initialized = true;
+        seensay.init();
+    }
+    return seensay;
 }
 
 void SeeNSay::dma_irq_handler() {
@@ -101,7 +105,7 @@ void SeeNSay::play(const uint16_t* data, size_t size) {
         (chan_num == PWM_CHAN_A) ? (void*)&pwm_hw->slice[slice_num].cc
                                  : (void*)&((uint16_t*)&pwm_hw->slice[slice_num].cc)[1];
     pwm_set_enabled(slice_num, true);
-    dma_channel_configure(dma_chan, &dma_cfg, write_addr, data, audio_size, true);
+    dma_channel_configure(dma_chan, &dma_cfg, write_addr, data, size, true);
     dma_channel_set_irq0_enabled(dma_chan, true);
 
     gpio_put(audio_off_pin, true);
