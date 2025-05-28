@@ -1,12 +1,12 @@
-#ifndef PWM_AUDIO_H
-#define PWM_AUDIO_H
+#ifndef SEENSAY_H
+#define SEENSAY_H
 
 #include <stddef.h>
 #include <stdint.h>
 #include <array>
 #include "hardware/dma.h"
 
-class PWMAudio {
+class SeeNSay {
 private:
     static constexpr uint num_buttons = 12;
     static constexpr uint first_button_pin = 0;
@@ -35,13 +35,13 @@ private:
 
     std::array<button_sound, num_buttons> button_sounds{};
 
-    PWMAudio() {
+    SeeNSay() {
         init();
     }
-    ~PWMAudio() = default;
+    ~SeeNSay() = default;
 
-    PWMAudio(const PWMAudio&) = delete;
-    PWMAudio& operator=(const PWMAudio&) = delete;
+    SeeNSay(const SeeNSay&) = delete;
+    SeeNSay& operator=(const SeeNSay&) = delete;
 
     static void dma_irq_handler();
     static void gpio_irq_handler(uint gpio, uint32_t events);
@@ -56,9 +56,9 @@ private:
     size_t get_position() const;
 
 public:
-    static PWMAudio& instance();
+    static SeeNSay& instance();
     void set_button_sound(uint button_index, const uint16_t* data, size_t size);
     void update();
 };
 
-#endif // PWM_AUDIO_H
+#endif // SEENSAY_H

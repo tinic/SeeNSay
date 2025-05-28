@@ -6,13 +6,13 @@
 #include "hardware/pll.h"
 #include "hardware/xosc.h"
 #include "sounds.h"
-#include "pwm_audio.h"
+#include "seensay.h"
 
 int main() {
     set_sys_clock_48mhz();
     stdio_init_all();
     
-    PWMAudio& audio = PWMAudio::instance();
+    SeeNSay& audio = SeeNSay::instance();
     audio.set_button_sound(0, sound_01_data, sound_01_size);
     audio.set_button_sound(1, sound_02_data, sound_02_size);
     audio.set_button_sound(2, sound_03_data, sound_03_size);
@@ -30,6 +30,4 @@ int main() {
         audio.update();
         __wfi();
     }
-
-    return 0;
 }

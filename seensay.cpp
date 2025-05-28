@@ -1,4 +1,4 @@
-#include "pwm_audio.h"
+#include "seensay.h"
 
 #include <stdint.h>
 
@@ -9,23 +9,23 @@
 #include "hardware/pwm.h"
 #include "hardware/timer.h"
 
-PWMAudio& PWMAudio::instance() {
-    static PWMAudio instance;
+SeeNSay& SeeNSay::instance() {
+    static SeeNSay instance;
     return instance;
 }
 
-void PWMAudio::dma_irq_handler() {
-    PWMAudio& audio = PWMAudio::instance();
+void SeeNSay::dma_irq_handler() {
+    SeeNSay& audio = SeeNSay::instance();
     if (dma_channel_get_irq0_status(audio.dma_chan)) {
         dma_channel_acknowledge_irq0(audio.dma_chan);
         audio.stop();
     }
 }
 
-void PWMAudio::gpio_irq_handler(uint gpio, uint32_t events) {
+void SeeNSay::gpio_irq_handler(uint gpio, uint32_t events) {
     if (events & GPIO_IRQ_EDGE_FALL && gpio <= last_button_pin) {
         size_t bi = gpio - first_button_pin;
-        PWMAudio& audio = PWMAudio::instance();
+        SeeNSay& audio = SeeNSay::instance();
         if (!audio.is_playing()) {
             if (audio.button_sounds[bi].data && audio.button_sounds[bi].size > 0) {
                 audio.button_sounds[bi].pressed = true;
@@ -34,12 +34,12 @@ void PWMAudio::gpio_irq_handler(uint gpio, uint32_t events) {
     }
 }
 
-void PWMAudio::init() {
+void SeeNSay::init() {
     btn_gpio_init();
     pwm_dma_init();
 }
 
-void PWMAudio::btn_gpio_init() {
+void SeeNSay::btn_gpio_init() {
     gpio_init(audio_off_pin);
     gpio_set_dir(audio_off_pin, GPIO_OUT);
     gpio_put(audio_off_pin, false);
@@ -61,7 +61,7 @@ void PWMAudio::btn_gpio_init() {
     }
 }
 
-void PWMAudio::pwm_dma_init() {
+void SeeNSay::pwm_dma_init() {
     gpio_set_function(audio_pin, GPIO_FUNC_PWM);
 
     uint slice_num = pwm_gpio_to_slice_num(audio_pin);
@@ -86,7 +86,7 @@ void PWMAudio::pwm_dma_init() {
     irq_set_enabled(DMA_IRQ_0, true);
 }
 
-void PWMAudio::play(const uint16_t* data, size_t size) {
+void SeeNSay::play(const uint16_t* data, size_t size) {
     if (audio_playing) {
         return;
     }
@@ -107,7 +107,7 @@ void PWMAudio::play(const uint16_t* data, size_t size) {
     gpio_put(audio_off_pin, true);
 }
 
-void PWMAudio::stop() {
+void SeeNSay::stop() {
     if (audio_playing) {
         uint32_t remaining = dma_channel_hw_addr(dma_chan)->transfer_count;
         if (remaining > audio_size) {
@@ -124,11 +124,11 @@ void PWMAudio::stop() {
     }
 }
 
-bool PWMAudio::is_playing() const {
+bool SeeNSay::is_playing() const {
     return audio_playing;
 }
 
-size_t PWMAudio::get_position() const {
+size_t SeeNSay::get_position() const {
     if (!audio_playing) {
         return audio_position < 0 ? 0 : static_cast<size_t>(audio_position);
     }
@@ -141,7 +141,7 @@ size_t PWMAudio::get_position() const {
     return audio_size - remaining;
 }
 
-void PWMAudio::set_button_sound(uint bi, const uint16_t* data, size_t size) {
+void SeeNSay::set_button_sound(uint bi, const uint16_t* data, size_t size) {
     if (bi < num_buttons) {
         button_sounds.at(bi).data = data;
         button_sounds.at(bi).size = size;
@@ -149,7 +149,7 @@ void PWMAudio::set_button_sound(uint bi, const uint16_t* data, size_t size) {
     }
 }
 
-void PWMAudio::update() {
+void SeeNSay::update() {
     for (auto& b : button_sounds) {
         if (b.pressed) {
             b.pressed = false;

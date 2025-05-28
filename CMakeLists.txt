@@ -49,7 +49,7 @@ add_custom_target(convert_sounds DEPENDS ${GENERATED_SOUNDS_DIR}/sounds.h)
 
 add_executable(${CMAKE_PROJECT_NAME}
     main.cpp
-    pwm_audio.cpp
+    seensay.cpp
     ${GENERATED_SOUNDS_DIR}/sounds.h
 )
 
