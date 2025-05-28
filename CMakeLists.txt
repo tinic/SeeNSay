@@ -59,7 +59,8 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${GENERATED_SOUNDS_DIR}
 # Make sure sounds are converted before building main executable
 add_dependencies(${CMAKE_PROJECT_NAME} convert_sounds)
 
-target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE
+target_compile_options(${CMAKE_PROJECT_NAME} PUBLIC
+    -Os
     -Wall
     -Wextra
 )
